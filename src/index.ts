@@ -1,6 +1,8 @@
 import cors from "cors";
 import * as dotenv from "dotenv";
 import express from "express";
+import { errorHandler, notFound } from "./middleware/error";
+import routes from "./routes";
 
 // Load environment variables
 dotenv.config();
@@ -17,6 +19,9 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// API routes
+app.use("/api", routes);
+
 // Basic route
 app.get("/", (req, res) => {
   res.json({
@@ -26,14 +31,11 @@ app.get("/", (req, res) => {
   });
 });
 
-// Health check route
-app.get("/health", (req, res) => {
-  res.json({
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  });
-});
+// Not found middleware
+app.use(notFound);
+
+// Error handling middleware
+app.use(errorHandler);
 
 // Start server
 app.listen(PORT, () => {
