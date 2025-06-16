@@ -1,36 +1,65 @@
+# Development Docker Compose
 version: "3.8"
 
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15
-    container_name: brandie-postgres
+    image: postgres:15-alpine
+    container_name: brandie-postgres-dev
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: brandie_db
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - brandie-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d brandie_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Application (commented out for development)
-  # app:
-  #   build: .
-  #   container_name: brandie-app
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - postgres
-  #   environment:
-  #     NODE_ENV: production
-  #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/brandie_db?schema=public
-  #   ports:
-  #     - "3000:3000"
-  #   networks:
-  #     - brandie-network
+  # Application (development)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: brandie-app-dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/brandie_db?schema=public
+      JWT_SECRET: your_super_secret_jwt_key_here_change_in_production
+      JWT_EXPIRES_IN: 7d
+      CORS_ORIGIN: http://localhost:3000
+      LOG_LEVEL: debug
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dist
+    networks:
+      - brandie-network
+
+  # Redis (optional, for caching and rate limiting)
+  redis:
+    image: redis:7-alpine
+    container_name: brandie-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - brandie-network
 
 volumes:
   postgres_data:
