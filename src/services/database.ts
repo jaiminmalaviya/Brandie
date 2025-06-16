@@ -1,4 +1,4 @@
-import prisma from "../db";
+import prisma from "../config/database";
 import {
   Follow,
   Post,
@@ -8,7 +8,7 @@ import {
   UserCreateInput,
   UserWithCounts,
   UserWithPosts,
-} from "../types";
+} from "../types/database";
 
 /**
  * User utilities

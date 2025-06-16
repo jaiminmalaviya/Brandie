@@ -1,4 +1,5 @@
-import prisma from "./db";
+import "dotenv/config"; // Load environment variables
+import prisma from "../config/database";
 
 async function testConnection() {
   try {

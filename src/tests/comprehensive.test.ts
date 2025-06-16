@@ -1,4 +1,5 @@
-import { DatabaseService, FollowService, PostService, UserService } from "./services/database";
+import "dotenv/config"; // Load environment variables
+import { DatabaseService, FollowService, PostService, UserService } from "../services/database";
 
 async function runComprehensiveTest() {
   console.log("🧪 Running comprehensive database test...\n");

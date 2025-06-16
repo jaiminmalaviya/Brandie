@@ -385,6 +385,19 @@ Extensible for future features (comments, likes, etc).
 
 ---
 
+## Documentation
+
+Comprehensive project documentation is available in the [`docs/`](./docs/) folder:
+
+- **[📋 Project Progress](./docs/PROJECT_PROGRESS.md)** - Development status and completed phases
+- **[🏗️ Folder Structure](./docs/FOLDER_STRUCTURE.md)** - Code organization and architecture
+- **[✅ Setup Complete](./docs/SETUP_COMPLETE.md)** - Database and environment setup guide
+- **[📚 Docs Organization Summary](./docs/DOCS_ORGANIZATION_SUMMARY.md)** - Documentation structure guide
+
+For a complete documentation index, see [`docs/README.md`](./docs/README.md).
+
+---
+
 ## Contact & Support
 
 For issues, raise a GitHub issue or reach out to the project maintainer. See comments in code for additional technical details and implementation notes.
