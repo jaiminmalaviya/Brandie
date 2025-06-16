@@ -1,6 +1,12 @@
 import { Router } from "express";
 import { getProfile, login, register, updateProfile } from "../controllers/auth";
-import { authenticateToken, validateLogin, validateRegister } from "../middleware";
+import {
+  authenticateToken,
+  authRateLimit,
+  sanitizeContent,
+  validateLogin,
+  validateRegister,
+} from "../middleware";
 
 const router = Router();
 
@@ -9,14 +15,14 @@ const router = Router();
  * @desc    Register a new user
  * @access  Public
  */
-router.post("/register", validateRegister, register);
+router.post("/register", authRateLimit, sanitizeContent, validateRegister, register);
 
 /**
  * @route   POST /auth/login
  * @desc    Login user
  * @access  Public
  */
-router.post("/login", validateLogin, login);
+router.post("/login", authRateLimit, validateLogin, login);
 
 /**
  * @route   GET /auth/me

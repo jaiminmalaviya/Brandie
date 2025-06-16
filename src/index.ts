@@ -2,6 +2,13 @@ import cors from "cors";
 import * as dotenv from "dotenv";
 import express from "express";
 import { errorHandler, notFound } from "./middleware/error";
+import {
+  corsOptions,
+  generalRateLimit,
+  requestSizeLimit,
+  securityHeaders,
+  validateUserAgent,
+} from "./middleware/security";
 import routes from "./routes";
 
 // Load environment variables
@@ -10,14 +17,23 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
-  })
-);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Trust proxy (for accurate IP addresses behind reverse proxy)
+app.set("trust proxy", 1);
+
+// Security middleware (should be first)
+app.use(securityHeaders);
+app.use(validateUserAgent);
+app.use(requestSizeLimit);
+
+// CORS middleware with enhanced configuration
+app.use(cors(corsOptions));
+
+// Rate limiting (apply to all requests)
+app.use(generalRateLimit);
+
+// Body parsing middleware
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 // API routes
 app.use("/api", routes);

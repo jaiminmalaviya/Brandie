@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { createPost, deletePost, getPost, getPublicTimeline } from "../controllers/posts";
-import { authenticateToken, validateCreatePost } from "../middleware";
+import {
+  authenticateToken,
+  postCreationRateLimit,
+  sanitizeContent,
+  validateCreatePost,
+} from "../middleware";
 
 const router = Router();
 
@@ -16,7 +21,14 @@ router.get("/", getPublicTimeline);
  * @desc    Create a new post
  * @access  Private
  */
-router.post("/", authenticateToken, validateCreatePost, createPost);
+router.post(
+  "/",
+  authenticateToken,
+  postCreationRateLimit,
+  sanitizeContent,
+  validateCreatePost,
+  createPost
+);
 
 /**
  * @route   GET /posts/:id
