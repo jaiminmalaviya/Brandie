@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: brandie-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: brandie_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - brandie-network
+
+  # Application (commented out for development)
+  # app:
+  #   build: .
+  #   container_name: brandie-app
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - postgres
+  #   environment:
+  #     NODE_ENV: production
+  #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/brandie_db?schema=public
+  #   ports:
+  #     - "3000:3000"
+  #   networks:
+  #     - brandie-network
+
+volumes:
+  postgres_data:
+
+networks:
+  brandie-network:
+    driver: bridge
