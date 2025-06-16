@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { getUserPosts } from "../controllers/posts";
 import {
   followUser,
   getFollowStatus,
@@ -60,5 +61,12 @@ router.get("/:id/followers", getUserFollowers);
  * @access  Public
  */
 router.get("/:id/following", getUserFollowing);
+
+/**
+ * @route   GET /users/:id/posts
+ * @desc    Get posts by a specific user
+ * @access  Public
+ */
+router.get("/:id/posts", getUserPosts);
 
 export default router;

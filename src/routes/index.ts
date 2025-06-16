@@ -1,5 +1,7 @@
 import { Router } from "express";
 import authRoutes from "./auth";
+import feedRoutes from "./feed";
+import postRoutes from "./posts";
 import userRoutes from "./users";
 
 const router = Router();
@@ -9,6 +11,12 @@ router.use("/auth", authRoutes);
 
 // Mount user routes
 router.use("/users", userRoutes);
+
+// Mount post routes
+router.use("/posts", postRoutes);
+
+// Mount feed routes
+router.use("/feed", feedRoutes);
 
 // Health check endpoint
 router.get("/health", (req, res) => {
