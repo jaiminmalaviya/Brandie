@@ -1,7 +1,7 @@
-import { Follow, Post, Prisma, User } from "@prisma/client";
+import { Follow, Like, Post, Prisma, User } from "@prisma/client";
 
 // Re-export Prisma generated types
-export type { Follow, Post, User };
+export type { Follow, Like, Post, User };
 
 // User types
 export type UserCreateInput = Prisma.UserCreateInput;
@@ -27,6 +27,14 @@ export type FollowWhereUniqueInput = Prisma.FollowWhereUniqueInput;
 export type FollowSelect = Prisma.FollowSelect;
 export type FollowInclude = Prisma.FollowInclude;
 
+// Like types
+export type LikeCreateInput = Prisma.LikeCreateInput;
+export type LikeUpdateInput = Prisma.LikeUpdateInput;
+export type LikeWhereInput = Prisma.LikeWhereInput;
+export type LikeWhereUniqueInput = Prisma.LikeWhereUniqueInput;
+export type LikeSelect = Prisma.LikeSelect;
+export type LikeInclude = Prisma.LikeInclude;
+
 // Custom types for API responses
 export type UserWithCounts = User & {
   _count: {
@@ -40,6 +48,13 @@ export type PostWithAuthor = Post & {
   author: User;
 };
 
+export type PostWithAuthorAndCount = Post & {
+  author: User;
+  _count: {
+    likes: number;
+  };
+};
+
 export type UserWithPosts = User & {
   posts: Post[];
 };
@@ -47,4 +62,17 @@ export type UserWithPosts = User & {
 export type UserWithFollows = User & {
   followers: Follow[];
   following: Follow[];
+};
+
+export type LikeWithUser = Like & {
+  user: User;
+};
+
+export type PostWithLikes = Post & {
+  likes: Like[];
+};
+
+export type PostWithAuthorAndLikes = Post & {
+  author: User;
+  likes: Like[];
 };

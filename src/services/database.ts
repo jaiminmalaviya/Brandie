@@ -1,9 +1,11 @@
 import prisma from "../config/database";
 import {
   Follow,
+  LikeWithUser,
   Post,
   PostCreateInput,
   PostWithAuthor,
+  PostWithAuthorAndCount,
   User,
   UserCreateInput,
   UserWithCounts,
@@ -151,10 +153,15 @@ export class PostService {
   static async getPostsWithAuthors(
     limit: number = 20,
     skip: number = 0
-  ): Promise<PostWithAuthor[]> {
+  ): Promise<PostWithAuthorAndCount[]> {
     return prisma.post.findMany({
       include: {
         author: true,
+        _count: {
+          select: {
+            likes: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
       take: limit,
@@ -162,7 +169,7 @@ export class PostService {
     });
   }
 
-  static async getTimeline(userId: string, limit: number = 20): Promise<PostWithAuthor[]> {
+  static async getTimeline(userId: string, limit: number = 20): Promise<PostWithAuthorAndCount[]> {
     // Get posts from users that the current user follows
     const following = await prisma.follow.findMany({
       where: { followerId: userId },
@@ -180,10 +187,80 @@ export class PostService {
       },
       include: {
         author: true,
+        _count: {
+          select: {
+            likes: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
       take: limit,
     });
+  }
+
+  // Like functionality
+  static async findLike(userId: string, postId: string) {
+    return prisma.like.findUnique({
+      where: {
+        userId_postId: {
+          userId,
+          postId,
+        },
+      },
+    });
+  }
+
+  static async createLike(userId: string, postId: string) {
+    return prisma.like.create({
+      data: {
+        userId,
+        postId,
+      },
+    });
+  }
+
+  static async deleteLike(userId: string, postId: string) {
+    return prisma.like.delete({
+      where: {
+        userId_postId: {
+          userId,
+          postId,
+        },
+      },
+    });
+  }
+
+  static async getPostLikes(postId: string, limit: number = 20): Promise<LikeWithUser[]> {
+    return prisma.like.findMany({
+      where: { postId },
+      include: {
+        user: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
+  }
+
+  static async getLikeCount(postId: string): Promise<number> {
+    return prisma.like.count({
+      where: { postId },
+    });
+  }
+
+  static async getUserLikedPosts(userId: string, postIds: string[]): Promise<string[]> {
+    const likes = await prisma.like.findMany({
+      where: {
+        userId,
+        postId: {
+          in: postIds,
+        },
+      },
+      select: {
+        postId: true,
+      },
+    });
+
+    return likes.map((like) => like.postId);
   }
 }
 

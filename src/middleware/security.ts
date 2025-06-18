@@ -22,13 +22,14 @@ export const securityHeaders = helmet({
  */
 export const generalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
+  max: process.env.NODE_ENV === "test" ? 10000 : 100, // Much higher limit for tests
   message: {
     success: false,
     error: "Too many requests from this IP, please try again later.",
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === "test", // Skip rate limiting in test environment
 });
 
 /**
@@ -36,7 +37,7 @@ export const generalRateLimit = rateLimit({
  */
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 login attempts per window
+  max: process.env.NODE_ENV === "test" ? 1000 : 5, // Much higher limit for tests
   message: {
     success: false,
     error: "Too many authentication attempts, please try again later.",
@@ -44,6 +45,7 @@ export const authRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful requests
+  skip: () => process.env.NODE_ENV === "test", // Skip rate limiting in test environment
 });
 
 /**
@@ -51,13 +53,14 @@ export const authRateLimit = rateLimit({
  */
 export const postCreationRateLimit = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20, // 20 posts per hour
+  max: process.env.NODE_ENV === "test" ? 1000 : 20, // Much higher limit for tests
   message: {
     success: false,
     error: "Too many posts created, please try again later.",
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === "test", // Skip rate limiting in test environment
 });
 
 /**

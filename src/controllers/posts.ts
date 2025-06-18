@@ -23,6 +23,7 @@ export const createPost = asyncHandler(
 
     // Get the post with author information
     const postWithAuthor = await PostService.getPostWithAuthor(post.id);
+    const likeCount = await PostService.getLikeCount(post.id);
 
     res.status(201).json({
       success: true,
@@ -34,6 +35,8 @@ export const createPost = asyncHandler(
         createdAt: postWithAuthor!.createdAt,
         updatedAt: postWithAuthor!.updatedAt,
         author: sanitizeUser(postWithAuthor!.author),
+        likeCount,
+        isLiked: false, // New post, so not liked yet
       },
     });
   }
@@ -46,10 +49,19 @@ export const createPost = asyncHandler(
 export const getPost = asyncHandler(
   async (req: Request, res: Response<ApiResponse>): Promise<void> => {
     const { id } = req.params;
+    const userId = req.user?.id; // Optional, for checking if user liked the post
 
     const post = await PostService.getPostWithAuthor(id);
     if (!post) {
       throw new AppError("Post not found", 404);
+    }
+
+    const likeCount = await PostService.getLikeCount(id);
+    let isLiked = false;
+
+    if (userId) {
+      const like = await PostService.findLike(userId, id);
+      isLiked = !!like;
     }
 
     res.status(200).json({
@@ -61,6 +73,8 @@ export const getPost = asyncHandler(
         createdAt: post.createdAt,
         updatedAt: post.updatedAt,
         author: sanitizeUser(post.author),
+        likeCount,
+        isLiked,
       },
     });
   }
@@ -124,6 +138,10 @@ export const getFeed = asyncHandler(
 
     const posts = await PostService.getTimeline(userId, limitNum);
 
+    // Get liked posts for the current user
+    const postIds = posts.map((post) => post.id);
+    const likedPostIds = await PostService.getUserLikedPosts(userId, postIds);
+
     res.status(200).json({
       success: true,
       data: posts.map((post) => ({
@@ -133,6 +151,8 @@ export const getFeed = asyncHandler(
         createdAt: post.createdAt,
         updatedAt: post.updatedAt,
         author: sanitizeUser(post.author),
+        likeCount: post._count.likes,
+        isLiked: likedPostIds.includes(post.id),
       })),
       meta: {
         userId,
@@ -151,6 +171,7 @@ export const getFeed = asyncHandler(
 export const getPublicTimeline = asyncHandler(
   async (req: Request, res: Response<ApiResponse>): Promise<void> => {
     const { limit, skip } = req.query as { limit?: string; skip?: string };
+    const userId = req.user?.id; // Optional, for checking which posts are liked
 
     const limitNum = limit ? parseInt(limit, 10) : 20;
     const skipNum = skip ? parseInt(skip, 10) : 0;
@@ -161,6 +182,12 @@ export const getPublicTimeline = asyncHandler(
 
     const posts = await PostService.getPostsWithAuthors(limitNum, skipNum);
 
+    let likedPostIds: string[] = [];
+    if (userId) {
+      const postIds = posts.map((post) => post.id);
+      likedPostIds = await PostService.getUserLikedPosts(userId, postIds);
+    }
+
     res.status(200).json({
       success: true,
       data: posts.map((post) => ({
@@ -170,6 +197,8 @@ export const getPublicTimeline = asyncHandler(
         createdAt: post.createdAt,
         updatedAt: post.updatedAt,
         author: sanitizeUser(post.author),
+        likeCount: post._count.likes,
+        isLiked: userId ? likedPostIds.includes(post.id) : false,
       })),
       meta: {
         count: posts.length,
@@ -208,6 +237,117 @@ export const deletePost = asyncHandler(
       data: {
         id,
         deletedAt: new Date().toISOString(),
+      },
+    });
+  }
+);
+
+/**
+ * Like a post
+ * POST /posts/:id/like
+ */
+export const likePost = asyncHandler(
+  async (req: Request, res: Response<ApiResponse>): Promise<void> => {
+    const { id: postId } = req.params;
+    const userId = req.user!.id;
+
+    // Check if post exists
+    const post = await PostService.findById(postId);
+    if (!post) {
+      throw new AppError("Post not found", 404);
+    }
+
+    // Check if user already liked this post
+    const existingLike = await PostService.findLike(userId, postId);
+    if (existingLike) {
+      throw new AppError("Post already liked", 400);
+    }
+
+    // Create the like
+    const like = await PostService.createLike(userId, postId);
+
+    res.status(201).json({
+      success: true,
+      message: "Post liked successfully",
+      data: {
+        id: like.id,
+        postId,
+        userId,
+        createdAt: like.createdAt,
+      },
+    });
+  }
+);
+
+/**
+ * Unlike a post
+ * DELETE /posts/:id/like
+ */
+export const unlikePost = asyncHandler(
+  async (req: Request, res: Response<ApiResponse>): Promise<void> => {
+    const { id: postId } = req.params;
+    const userId = req.user!.id;
+
+    // Check if post exists
+    const post = await PostService.findById(postId);
+    if (!post) {
+      throw new AppError("Post not found", 404);
+    }
+
+    // Check if user has liked this post
+    const existingLike = await PostService.findLike(userId, postId);
+    if (!existingLike) {
+      throw new AppError("Post not liked yet", 400);
+    }
+
+    // Remove the like
+    await PostService.deleteLike(userId, postId);
+
+    res.status(200).json({
+      success: true,
+      message: "Post unliked successfully",
+      data: {
+        postId,
+        userId,
+        unlikedAt: new Date().toISOString(),
+      },
+    });
+  }
+);
+
+/**
+ * Get likes for a post
+ * GET /posts/:id/likes
+ */
+export const getPostLikes = asyncHandler(
+  async (req: Request, res: Response<ApiResponse>): Promise<void> => {
+    const { id: postId } = req.params;
+    const { limit } = req.query as { limit?: string };
+
+    // Check if post exists
+    const post = await PostService.findById(postId);
+    if (!post) {
+      throw new AppError("Post not found", 404);
+    }
+
+    const limitNum = limit ? parseInt(limit, 10) : 20;
+    if (limitNum > 100) {
+      throw new AppError("Limit cannot exceed 100", 400);
+    }
+
+    const likes = await PostService.getPostLikes(postId, limitNum);
+
+    res.status(200).json({
+      success: true,
+      data: likes.map((like) => ({
+        id: like.id,
+        createdAt: like.createdAt,
+        user: sanitizeUser(like.user),
+      })),
+      meta: {
+        postId,
+        count: likes.length,
+        limit: limitNum,
       },
     });
   }
